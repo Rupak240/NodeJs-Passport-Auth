@@ -56,7 +56,7 @@ router.post("/register", async (req, res) => {
           newUser.password = hash;
 
           // Save User
-          newUser 
+          newUser
             .save()
             .then((user) => {
               req.flash("success_msg", "You are now registered and can login.");
@@ -67,6 +67,22 @@ router.post("/register", async (req, res) => {
       );
     }
   }
+});
+
+// Login Handle
+router.post("/login", (req, res, next) => {
+  passport.authenticate("local", {
+    successRedirect: "/dashboard",
+    failureRedirect: "/users/login",
+    failureFlash: true,
+  })(req, res, next);
+});
+
+// Logout Handle
+router.get("/logout", (req, res) => {
+  req.logout();
+  req.flash("success_msg", "You are logged out.");
+  res.redirect("/users/login");
 });
 
 module.exports = router;
