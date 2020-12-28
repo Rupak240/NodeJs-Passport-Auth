@@ -1,0 +1,72 @@
+const passport = require("passport");
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+
+const router = require("express").Router();
+
+// Login Page
+router.get("/login", (req, res) => {
+  res.render("login");
+});
+
+// Register Page
+router.get("/register", (req, res) => {
+  res.render("register");
+});
+
+// Register Handle
+router.post("/register", async (req, res) => {
+  const { name, email, password, password2 } = req.body;
+  let errors = [];
+
+  // Check required fields
+  if (!name || !email || !passport || !password2) {
+    errors.push({ msg: "Please fill in all fields!" });
+  }
+
+  // Check passwords match
+  if (password !== password2) {
+    errors.push({ msg: "Passwords donot match!" });
+  }
+
+  // Check password length
+  if (password.length < 6) {
+    errors.push({ msg: "Password should be atleast 6 characters!" });
+  }
+
+  if (errors.length > 0) {
+    res.render("register", { errors, name, email, password, password2 });
+  } else {
+    // Validation passed
+    const existingUser = await User.findOne({ email });
+
+    //  User exists
+    errors.push({ msg: "Email already registered!" });
+    if (existingUser) {
+      res.render("register", { errors, name, email, password, password2 });
+    } else {
+      const newUser = await new User({ name, email, password });
+
+      // Hash password
+      bcrypt.genSalt(10, (error, salt) =>
+        bcrypt.hash(newUser.password, salt, (error, hash) => {
+          if (error) throw error;
+
+          // Set password to Hashed
+          newUser.password = hash;
+
+          // Save User
+          newUser 
+            .save()
+            .then((user) => {
+              req.flash("success_msg", "You are now registered and can login.");
+              res.redirect("/users/login");
+            })
+            .catch((err) => console.log(err));
+        })
+      );
+    }
+  }
+});
+
+module.exports = router;
